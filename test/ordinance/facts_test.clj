@@ -1,0 +1,25 @@
+(ns ordinance.facts-test
+  (:require [clojure.string :as str]
+            [clojure.test :refer [deftest is]]
+            [ordinance.facts :as facts]))
+
+(deftest montevideo-has-spec-basis
+  (let [sb (facts/spec-basis "montevideo")]
+    (is (= 2 (count sb)))
+    (is (every? #(str/starts-with? (:ordinance/url %) "https://normativa.montevideo.gub.uy/") sb))))
+
+(deftest unknown-municipality-has-no-spec-basis
+  (is (nil? (facts/spec-basis "punta-del-este")))
+  (is (nil? (facts/spec-basis "zzz"))))
+
+(deftest coverage-is-honest
+  (let [c (facts/coverage ["montevideo" "punta-del-este"])]
+    (is (= 2 (:requested c)))
+    (is (= 1 (:covered c)))
+    (is (= ["punta-del-este"] (:missing-municipalities c)))))
+
+(deftest by-topic-filters
+  (is (= ["montevideo.resolucion-326-13-terminologia-departamental"]
+         (mapv :ordinance/id (facts/by-topic "montevideo" :governance))))
+  (is (empty? (facts/by-topic "montevideo" :labor)))
+  (is (empty? (facts/by-topic "punta-del-este" :public-safety))))
